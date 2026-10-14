@@ -1,0 +1,268 @@
+<div class="dashboard">
+    <h1>SmartRide Optimizer</h1>
+    <p>Time-aware ride dispatch optimization dashboard</p>
+  
+
+<section class="entry-section">
+
+    <h2>Add Driver</h2>
+  
+    <form [formGroup]="driverForm" (ngSubmit)="addDriver()">
+  
+      <label>Driver ID</label>
+      <input formControlName="id" placeholder="D1" />
+  
+      <label>Current Address</label>
+
+        <div #driverAddressContainer></div>
+
+        <p *ngIf="selectedDriverLocation">
+        Latitude: {{ selectedDriverLocation.latitude }}
+        Longitude: {{ selectedDriverLocation.longitude }}
+        </p>
+  
+      <label>Vehicle Capacity</label>
+      <input
+        type="number"
+        formControlName="capacity"
+        min="1" />
+  
+      <button type="submit">Add Driver</button>
+    </form>
+  
+    
+    <h3>Added Drivers ({{ drivers.length }})</h3>
+
+    <ul>
+    <li *ngFor="let driver of drivers">
+        <strong>{{ driver.id }}</strong> —
+        {{ driver.address }} —
+        Capacity: {{ driver.capacity }}
+
+        <p>
+        Latitude: {{ driver.latitude }}
+        Longitude: {{ driver.longitude }}
+        </p>
+
+        <button type="button" (click)="removeDriver(driver.id)">
+        Remove
+        </button>
+    </li>
+    </ul>
+
+    <h2>Add Ride Request</h2>
+  
+    <form [formGroup]="rideForm" (ngSubmit)="addRide()">
+  
+      <label>Ride ID</label>
+      <input formControlName="id" placeholder="R1" />
+  
+      <label>Rider ID</label>
+      <input formControlName="riderId" placeholder="Rider1" />
+  
+      <label>Pickup Address</label>
+        <div #pickupAddressContainer></div>
+
+        <p *ngIf="selectedPickupLocation">
+        Latitude: {{ selectedPickupLocation.latitude }}
+        Longitude: {{ selectedPickupLocation.longitude }}
+        </p>
+
+      <label>Drop-off Address</label>
+
+        <div #dropoffAddressContainer></div>
+
+        <p *ngIf="selectedDropoffLocation">
+        Latitude: {{ selectedDropoffLocation.latitude }}
+        Longitude: {{ selectedDropoffLocation.longitude }}
+        </p>
+  
+      <label>Passenger Count</label>
+      <input
+        type="number"
+        formControlName="passengerCount"
+        min="1" />
+  
+      <label>Maximum Wait (seconds)</label>
+      <input
+        type="number"
+        formControlName="maxWaitSeconds"
+        min="0" />
+  
+      <button type="submit">Add Ride</button>
+    </form>
+  
+    
+    <h3>Added Rides ({{ rides.length }})</h3>
+
+    <ul>
+    <li *ngFor="let ride of rides">
+        <strong>{{ ride.id }}</strong>
+        (Rider: {{ ride.riderId }})
+
+        <p>
+        Pickup: {{ ride.pickupAddress }}
+        <br />
+        Latitude: {{ ride.pickupLatitude }},
+        Longitude: {{ ride.pickupLongitude }}
+        </p>
+
+        <p>
+        Drop-off: {{ ride.dropoffAddress }}
+        <br />
+        Latitude: {{ ride.dropoffLatitude }},
+        Longitude: {{ ride.dropoffLongitude }}
+        </p>
+
+        <p>
+        Passengers: {{ ride.passengerCount }}
+        | Max Wait: {{ ride.maxWaitSeconds }} seconds
+        </p>
+
+        <button type="button" (click)="removeRide(ride.id)">
+        Remove
+        </button>
+    </li>
+    </ul>
+  
+  </section>
+  
+    <button
+      (click)="runOptimization()"
+      [disabled]="loading">
+      {{ loading ? 'Optimizing...' : 'Run Optimization' }}
+    </button>
+  
+    <p *ngIf="errorMessage" class="error">
+      {{ errorMessage }}
+    </p>
+  
+    <div *ngIf="response as data" class="results">
+      <h2>Dispatch Metrics</h2>
+  
+      <div class="metrics">
+        <div class="metric">
+          <h3>Assigned Rides</h3>
+          <strong>{{ data.metrics.assignedRides }}</strong>
+        </div>
+  
+        <div class="metric">
+          <h3>Unassigned Rides</h3>
+          <strong>{{ data.metrics.unassignedRides }}</strong>
+        </div>
+  
+        <div class="metric">
+          <h3>Total Distance</h3>
+          <strong>
+            {{ data.result.totalDistanceKm | number:'1.2-2' }} km
+          </strong>
+        </div>
+  
+        <div class="metric">
+          <h3>Empty Distance</h3>
+          <strong>
+            {{ data.metrics.emptyDistancePercentage | number:'1.2-2' }}%
+          </strong>
+        </div>
+  
+        <div class="metric">
+          <h3>Rider Wait</h3>
+          <strong>
+            {{ data.result.totalRiderWaitSeconds / 60 | number:'1.2-2' }} min
+          </strong>
+        </div>
+  
+        <div class="metric">
+          <h3>Optimization Time</h3>
+          <strong>{{ data.metrics.optimizationDurationMs }} ms</strong>
+        </div>
+      </div>
+  
+      <h2>Driver Routes</h2>
+  
+      <div
+        *ngFor="let route of data.result.driverRoutes"
+        class="route">
+        <h3>{{ route.driverId }}</h3>
+  
+        <p>
+          Total: {{ route.totalDistanceKm | number:'1.2-2' }} km
+          |
+          Empty: {{ route.emptyDistanceKm | number:'1.2-2' }} km
+        </p>
+  
+        <ul>
+          <li *ngFor="let stop of route.stops">
+            {{ stop.rideId }} —
+            {{ stop.type }} —
+            {{ stop.arrivalAtSeconds }} sec
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    
+    
+<section class="map-section">
+    <h2>Dispatch Map</h2>
+  
+    <google-map
+      height="450px"
+      width="100%"
+      [center]="mapCenter"
+      [zoom]="mapZoom"
+      [options]="mapOptions"
+      (mapInitialized)="fitMapToMarkers()">
+  
+      <!-- Driver markers -->
+      <map-marker
+        *ngFor="let marker of driverMarkers; let i = index"
+        #driverMarker="mapMarker"
+        [position]="marker"
+        [options]="driverMarkerOptions"
+        (mapClick)="openDriverInfo(driverMarker, i)">
+      </map-marker>
+  
+      <!-- Pickup markers -->
+      <map-marker
+        *ngFor="let marker of pickupMarkers; let i = index"
+        #pickupMarker="mapMarker"
+        [position]="marker"
+        [options]="pickupMarkerOptions"
+        (mapClick)="openPickupInfo(pickupMarker, i)">
+      </map-marker>
+  
+      <!-- Drop-off markers -->
+      <map-marker
+        *ngFor="let marker of dropoffMarkers; let i = index"
+        #dropoffMarker="mapMarker"
+        [position]="marker"
+        [options]="dropoffMarkerOptions"
+        (mapClick)="openDropoffInfo(dropoffMarker, i)">
+      </map-marker>
+  
+      <!-- Information window -->
+      <map-info-window>
+        <div class="marker-info">
+          <h3>{{ selectedMarkerTitle }}</h3>
+  
+          <p *ngFor="let detail of selectedMarkerDetails">
+            {{ detail }}
+          </p>
+        </div>
+      </map-info-window>
+  
+      <!-- Optimized driver routes -->
+      <map-polyline
+        *ngFor="let route of optimizedRoutes"
+        [path]="route.path"
+        [options]="route.options">
+      </map-polyline>
+  
+    </google-map>
+  </section>
+  
+    
+    
+  </div>
+  

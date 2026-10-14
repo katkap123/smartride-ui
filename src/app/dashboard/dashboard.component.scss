@@ -1,0 +1,61 @@
+
+.entry-section {
+    margin: 24px 0;
+  
+    form {
+      display: grid;
+      gap: 12px;
+      max-width: 520px;
+      margin-bottom: 24px;
+    }
+  
+    input {
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+  
+    button {
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+  
+    li {
+      margin-bottom: 10px;
+    }
+  }
+
+
+gmp-place-autocomplete {
+    display: block;
+    width: 100%;
+  
+    color-scheme: light;
+  
+    --gmpx-color-surface: #ffffff;
+    --gmpx-color-on-surface: #1f2937;
+  }
+
+  .map-section {
+    margin-top: 32px;
+    width: 100%;
+  }
+  
+  
+.marker-info {
+    min-width: 200px;
+    max-width: 300px;
+    color: #1f2937;
+  
+    h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+  
+    p {
+      margin: 6px 0;
+      font-size: 13px;
+    }
+  }
+  
